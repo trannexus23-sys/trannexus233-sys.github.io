@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NEXUS — File Share</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #06080F;
+  --s1:      #0B0F1A;
+  --s2:      #111827;
+  --bd:      #1E2A3A;
+  --bd2:     #263347;
+  --purple:  #7C3AED;
+  --purpleL: #A78BFA;
+  --green:   #10B981;
+  --red:     #F43F5E;
+  --yellow:  #F59E0B;
+  --text:    #CBD5E1;
+  --muted:   #64748B;
+  --white:   #F1F5F9;
+  --mono:    'JetBrains Mono', monospace;
+  --sans:    'Inter', sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow:hidden}
+
+/* ══ AUTH ══════════════════════════════════ */
+#auth{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:var(--bg)}
+#pcanvas{position:absolute;inset:0;pointer-events:none}
+
+.acard{
+  position:relative;z-index:1;
+  display:flex;width:820px;max-width:calc(100vw - 20px);
+  min-height:460px;background:var(--s1);
+  border:1px solid var(--bd);border-radius:20px;overflow:hidden;
+  box-shadow:0 32px 80px rgba(0,0,0,.6),0 0 0 1px rgba(124,58,237,.1);
+  animation:cardIn .5s cubic-bezier(.16,1,.3,1) both
+}
+@keyframes cardIn{from{opacity:0;transform:translateY(28px) scale(.97)}to{opacity:1;transform:none}}
+
+/* left brand */
+.abrand{
+  width:300px;flex-shrink:0;padding:44px 32px;
+  background:linear-gradient(155deg,#130C30 0%,#0D1424 55%,#06080F 100%);
+  border-right:1px solid var(--bd);
+  display:flex;flex-direction:column;justify-content:space-between;
+  position:relative;overflow:hidden
+}
+.abrand::before{content:'';position:absolute;top:-80px;left:-80px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.22) 0%,transparent 70%);pointer-events:none}
+.abrand::after{content:'';position:absolute;bottom:-60px;right:-40px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.12) 0%,transparent 70%);pointer-events:none}
+
+.a-logo{display:flex;align-items:center;gap:12px;position:relative;z-index:1}
+.a-icon{width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,var(--purple),#4F46E5);display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 8px 24px rgba(124,58,237,.4)}
+.a-name{font-family:var(--mono);font-size:17px;font-weight:700;color:var(--white);letter-spacing:.07em}
+.a-ver{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px;letter-spacing:.07em}
+
+.a-headline{position:relative;z-index:1;font-size:24px;font-weight:700;color:var(--white);line-height:1.3;letter-spacing:-.02em}
+.a-headline em{font-style:normal;background:linear-gradient(90deg,var(--purpleL),#818CF8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+
+.a-feats{position:relative;z-index:1;display:flex;flex-direction:column;gap:9px}
+.a-feat{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--muted)}
+.fdot{width:5px;height:5px;border-radius:50%;background:var(--purple);flex-shrink:0}
+
+/* right form */
+.aform{flex:1;padding:44px 40px;display:flex;flex-direction:column;justify-content:center}
+.af-title{font-size:20px;font-weight:700;color:var(--white);margin-bottom:5px}
+.af-sub{font-size:12px;color:var(--muted);margin-bottom:28px;line-height:1.6}
+
+.key-field{position:relative;margin-bottom:14px}
+.key-field .ki{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none;color:var(--muted)}
+#kinput{
+  width:100%;background:var(--bg);border:1.5px solid var(--bd2);border-radius:9px;
+  padding:13px 42px 13px 40px;color:var(--purpleL);
+  font-family:var(--mono);font-size:12.5px;outline:none;letter-spacing:.04em;
+  transition:border-color .18s,box-shadow .18s;caret-color:var(--purpleL)
+}
+#kinput::placeholder{color:var(--muted);letter-spacing:0;font-size:12px}
+#kinput:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(124,58,237,.16)}
+#kinput.err{border-color:var(--red);box-shadow:0 0 0 3px rgba(244,63,94,.12);animation:shake .35s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}60%{transform:translateX(6px)}80%{transform:translateX(3px)}}
+.kpaste{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:4px;transition:color .15s}
+.kpaste:hover{color:var(--purple)}
+
+/* dots */
+.adots{display:flex;gap:6px;justify-content:center;margin-bottom:12px}
+.adot{width:7px;height:7px;border-radius:50%;background:var(--bd2);transition:background .3s}
+.adot.used{background:var(--red)}
+
+#amsg{font-size:12px;text-align:center;min-height:16px;font-family:var(--mono);margin-bottom:12px}
+#amsg.err{color:var(--red)}
+#amsg.ok{color:var(--green)}
+
+/* lockout */
+.lockbox{display:none;text-align:center;padding:16px 0}
+.lockbox .li{font-size:34px;margin-bottom:8px}
+.lockbox p{font-size:12px;color:var(--muted);margin-bottom:6px}
+.lockcd{font-family:var(--mono);font-size:28px;font-weight:700;color:var(--red)}
+
+/* submit */
+#asubmit{
+  width:100%;padding:13px;border-radius:9px;
+  background:linear-gradient(135deg,var(--purple),#4F46E5);
+  color:#fff;font-family:var(--sans);font-size:14px;font-weight:600;
+  border:none;cursor:pointer;letter-spacing:.02em;
+  box-shadow:0 4px 20px rgba(124,58,237,.32);
+  transition:opacity .18s,transform .15s;margin-bottom:16px
+}
+#asubmit:hover{opacity:.9;transform:translateY(-1px)}
+#asubmit:active{transform:none;opacity:1}
+#asubmit:disabled{opacity:.45;cursor:not-allowed;transform:none}
+
+.a-hint{background:rgba(124,58,237,.07);border:1px solid rgba(124,58,237,.16);border-radius:7px;padding:10px 14px;margin-bottom:18px;font-size:11px;color:var(--muted);font-family:var(--mono);line-height:1.7}
+.a-hint span{color:var(--purpleL)}
+
+.a-sep{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.a-sep-line{flex:1;height:1px;background:var(--bd)}
+.a-sep-txt{font-size:11px;color:var(--muted);white-space:nowrap}
+
+.admin-link{text-align:center;font-size:12px;color:var(--muted);font-family:var(--mono)}
+.admin-link a{color:var(--purpleL);cursor:pointer;text-decoration:none}
+.admin-link a:hover{text-decoration:underline}
+
+/* admin pass mini-panel */
+#admin-pass-panel{ display:none }
+#key-panel{ display:block }
+
+.ap-inp{
+  width:100%;background:var(--bg);border:1.5px solid var(--bd2);border-radius:8px;
+  padding:11px 13px;color:var(--white);font-family:var(--sans);font-size:13px;
+  outline:none;transition:border-color .15s,box-shadow .15s;margin-bottom:10px;
+  display:block
+}
+.ap-inp:focus{ border-color:var(--purple); box-shadow:0 0 0 3px rgba(124,58,237,.14) }
+.ap-inp.err{ border-color:var(--red); box-shadow:0 0 0 3px rgba(244,63,94,.12); animation:shake .35s ease }
+#pass-msg{ font-size:12px;text-align:center;min-height:16px;font-family:var(--mono);margin-bottom:12px;display:block }
+#pass-msg.err{ color:var(--red) }
+#pass-msg.ok{ color:var(--green) }
+#apassubmit{
+  width:100%;padding:12px;border-radius:8px;
+  background:var(--s2);border:1.5px solid var(--bd2);
+  color:var(--white);font-family:var(--sans);font-size:13px;font-weight:600;
+  cursor:pointer;transition:all .18s;margin-bottom:12px;display:block
+}
+#apassubmit:hover{ border-color:var(--purple);background:rgba(124,58,237,.14) }
+#apassubmit:disabled{ opacity:.45;cursor:not-allowed }
+.back-link{ text-align:center;font-size:12px;color:var(--muted);cursor:pointer;font-family:var(--mono);margin-top:4px }
+.back-link:hover{ color:var(--purpleL) }
+
+/* admin panel tabs */
+.ap-tabs{ display:flex;gap:0;margin-bottom:20px;border-radius:8px;overflow:hidden;border:1px solid var(--bd2) }
+.ap-tab{ flex:1;padding:9px 0;font-size:12px;font-family:var(--mono);font-weight:600;border:none;cursor:pointer;transition:all .18s;letter-spacing:.03em;background:var(--bg);color:var(--muted) }
+.ap-tab:first-child{ border-right:1px solid var(--bd2) }
+.ap-tab.on{ background:rgba(124,58,237,.18);color:var(--purpleL) }
+.ap-tab:hover:not(.on){ background:rgba(124,58,237,.07);color:var(--text) }
+
+/* lockbox shared style */
+.lockbox{ display:none;text-align:center;padding:14px 0;margin-bottom:8px }
+.lockbox .li{ font-size:32px;margin-bottom:8px }
+.lockbox p{ font-size:12px;color:var(--muted);margin-bottom:6px }
+.lockcd{ font-family:var(--mono);font-size:26px;font-weight:700;color:var(--red) }
+
+@keyframes authOut{to{opacity:0;transform:scale(1.03)}}
+.auth-exit{animation:authOut .4s ease forwards}
+
+/* ══ APP ════════════════════════════════════ */
+#app{display:none;flex-direction:column;height:100vh}
+#app.on{display:flex}
+
+/* header */
+.hdr{height:52px;background:var(--s1);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 22px;gap:14px;flex-shrink:0;z-index:10}
+.hlogo{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--white);letter-spacing:.07em;display:flex;align-items:center;gap:8px}
+.hpulse{width:7px;height:7px;border-radius:50%;background:var(--purple);box-shadow:0 0 8px var(--purple);animation:pulse 2.4s ease infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.hsep{width:1px;height:18px;background:var(--bd)}
+.rbadge{font-family:var(--mono);font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;letter-spacing:.05em}
+.rb-admin{background:rgba(124,58,237,.18);color:var(--purpleL);border:1px solid rgba(124,58,237,.28)}
+.rb-user{background:rgba(16,185,129,.12);color:var(--green);border:1px solid rgba(16,185,129,.24)}
+.huser{font-size:12px;color:var(--muted);font-family:var(--mono)}
+.hright{margin-left:auto;display:flex;align-items:center;gap:10px}
+.hclock{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.logout-btn{background:none;border:1px solid var(--bd2);color:var(--muted);font-family:var(--sans);font-size:12px;padding:5px 13px;border-radius:6px;cursor:pointer;transition:all .15s}
+.logout-btn:hover{color:var(--red);border-color:rgba(244,63,94,.35)}
+
+/* body */
+.abody{display:flex;flex:1;overflow:hidden}
+
+/* sidebar */
+.sb{width:208px;flex-shrink:0;background:var(--s1);border-right:1px solid var(--bd);padding:18px 0;overflow-y:auto}
+.sb-sec{margin-bottom:22px}
+.sb-lbl{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.14em;color:var(--muted);padding:0 17px;margin-bottom:5px}
+.sb-item{display:flex;align-items:center;gap:9px;padding:9px 17px;cursor:pointer;font-size:13px;color:var(--muted);border-left:2px solid transparent;transition:all .14s}
+.sb-item:hover{color:var(--text);background:rgba(124,58,237,.05)}
+.sb-item.on{color:var(--purpleL);border-left-color:var(--purple);background:rgba(124,58,237,.08)}
+.sb-item .si{font-size:15px;width:18px;text-align:center}
+.sbc{margin-left:auto;background:var(--bd);color:var(--muted);font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:8px}
+
+/* main */
+.main{flex:1;overflow-y:auto;padding:26px 30px}
+.pg{display:none}
+.pg.on{display:block}
+
+.pgh{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22px}
+.pgt{font-size:20px;font-weight:700;color:var(--white)}
+.pgs{font-size:11px;color:var(--muted);margin-top:4px;font-family:var(--mono)}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:22px}
+.stat{background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:15px 17px}
+.sv{font-family:var(--mono);font-size:25px;font-weight:700;color:var(--white)}
+.sl{font-size:11px;color:var(--muted);margin-top:3px}
+
+/* toolbar */
+.toolbar{display:flex;align-items:center;gap:8px;padding:12px 15px;border-bottom:1px solid var(--bd)}
+.sinp{background:var(--bg);border:1px solid var(--bd2);border-radius:6px;padding:7px 12px;color:var(--text);font-family:var(--sans);font-size:12px;outline:none;width:200px;transition:border-color .15s}
+.sinp:focus{border-color:var(--purple)}
+.sinp::placeholder{color:var(--muted)}
+.chips{display:flex;gap:5px}
+.chip{padding:5px 12px;border-radius:20px;font-size:11px;cursor:pointer;border:1px solid var(--bd);background:none;color:var(--muted);font-family:var(--sans);transition:all .14s}
+.chip:hover,.chip.on{border-color:var(--purple);color:var(--purpleL);background:rgba(124,58,237,.1)}
+
+/* file table */
+.ftw{background:var(--s2);border:1px solid var(--bd);border-radius:12px;overflow:hidden}
+.frow{display:flex;align-items:center;gap:13px;padding:13px 15px;border-bottom:1px solid var(--bd);transition:background .12s}
+.frow:last-child{border-bottom:none}
+.frow:hover{background:rgba(124,58,237,.04)}
+.ficon{width:36px;height:36px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px}
+.fi-apk{background:rgba(124,58,237,.15)}
+.fi-zip{background:rgba(245,158,11,.12)}
+.fi-so{background:rgba(16,185,129,.12)}
+.fi-java{background:rgba(244,63,94,.12)}
+.fi-json{background:rgba(99,102,241,.15)}
+.fi-other{background:rgba(100,116,139,.12)}
+.finfo{flex:1;min-width:0}
+.fnm{font-size:13px;font-weight:500;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.fmeta{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.ftag{font-family:var(--mono);font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:.04em;flex-shrink:0}
+.t-new{background:rgba(16,185,129,.14);color:var(--green)}
+.t-stable{background:rgba(124,58,237,.14);color:var(--purpleL)}
+.t-beta{background:rgba(245,158,11,.14);color:var(--yellow)}
+.fdl{font-family:var(--mono);font-size:10px;color:var(--muted);width:48px;text-align:right;flex-shrink:0}
+.ract{display:flex;gap:6px;flex-shrink:0}
+.rbtn{display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;border:none;font-family:var(--sans);transition:opacity .14s}
+.rbtn:hover{opacity:.8}
+.btn-dl{background:rgba(124,58,237,.18);color:var(--purpleL)}
+.btn-del{background:rgba(244,63,94,.1);color:var(--red)}
+.empty{padding:48px;text-align:center;color:var(--muted);font-size:13px}
+
+/* upload zone */
+.dropzone{border:2px dashed var(--bd2);border-radius:12px;padding:40px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:18px}
+.dropzone:hover,.dropzone.drag{border-color:var(--purple);background:rgba(124,58,237,.05)}
+.dz-icon{font-size:38px;margin-bottom:11px}
+.dz-title{font-size:15px;font-weight:600;color:var(--white);margin-bottom:4px}
+.dz-sub{font-size:12px;color:var(--muted)}
+
+/* progress */
+.prog-list{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+.prog-item{background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:12px 14px}
+.pi-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.pi-name{font-size:12px;font-weight:500;color:var(--white)}
+.pi-size{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.pbar{height:3px;background:var(--bd);border-radius:2px;overflow:hidden}
+.pfill{height:100%;background:linear-gradient(90deg,var(--purple),#818CF8);border-radius:2px;transition:width .25s ease}
+.pi-status{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:4px}
+
+/* add file form */
+.addbox{background:var(--s2);border:1px solid var(--bd);border-radius:12px;padding:18px 22px;margin-bottom:18px}
+.add-title{font-size:13px;font-weight:600;color:var(--white);margin-bottom:13px}
+.ag{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.ai{background:var(--bg);border:1px solid var(--bd2);border-radius:7px;padding:9px 12px;color:var(--white);font-family:var(--sans);font-size:12px;outline:none;transition:border-color .14s;width:100%}
+.ai:focus{border-color:var(--purple)}
+.ai::placeholder{color:var(--muted)}
+.asel{background:var(--bg);border:1px solid var(--bd2);border-radius:7px;padding:9px 12px;color:var(--text);font-family:var(--sans);font-size:12px;outline:none;width:100%;cursor:pointer}
+.afc{grid-column:1/-1}
+
+/* key table */
+.ktw{background:var(--s2);border:1px solid var(--bd);border-radius:12px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{padding:11px 14px;text-align:left;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--muted);border-bottom:1px solid var(--bd)}
+tbody tr{border-bottom:1px solid var(--bd);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:rgba(124,58,237,.04)}
+td{padding:11px 14px}
+.kmono{font-family:var(--mono);font-size:11px;color:var(--purpleL)}
+.pill{display:inline-block;padding:2px 9px;border-radius:20px;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.05em}
+.p-active{background:rgba(16,185,129,.14);color:var(--green)}
+.p-expired{background:rgba(244,63,94,.12);color:var(--red)}
+.p-banned{background:rgba(100,116,139,.16);color:var(--muted)}
+.p-admin{background:rgba(124,58,237,.16);color:var(--purpleL)}
+.p-user{background:rgba(16,185,129,.12);color:var(--green)}
+.kdel{background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:2px 5px;transition:color .14s}
+.kdel:hover{color:var(--red)}
+
+/* buttons */
+.btn-p{display:inline-flex;align-items:center;gap:6px;padding:9px 17px;border-radius:7px;background:var(--purple);color:#fff;font-family:var(--sans);font-size:13px;font-weight:600;border:none;cursor:pointer;transition:opacity .15s}
+.btn-p:hover{opacity:.88}
+.btn-g{display:inline-flex;align-items:center;gap:6px;padding:9px 17px;border-radius:7px;background:var(--bd);color:var(--text);font-family:var(--sans);font-size:13px;font-weight:500;border:none;cursor:pointer;transition:opacity .15s}
+.btn-g:hover{opacity:.8}
+
+/* modal */
+.mbg{display:none;position:fixed;inset:0;z-index:8000;background:rgba(0,0,0,.65);align-items:center;justify-content:center}
+.mbg.on{display:flex}
+.modal{background:var(--s1);border:1px solid var(--bd2);border-radius:14px;padding:26px;width:420px;max-width:calc(100vw - 24px);animation:cardIn .3s ease}
+.modal h3{font-size:16px;font-weight:700;color:var(--white);margin-bottom:6px}
+.modal p{font-size:12px;color:var(--muted);margin-bottom:18px;line-height:1.6}
+.mact{display:flex;justify-content:flex-end;gap:8px}
+.btn-danger{padding:9px 17px;border-radius:7px;background:var(--red);color:#fff;font-family:var(--sans);font-size:13px;font-weight:600;border:none;cursor:pointer}
+
+/* toast */
+#toast{position:fixed;bottom:26px;right:26px;z-index:9999;background:var(--s2);border:1px solid var(--bd2);border-radius:10px;padding:12px 17px;font-size:13px;color:var(--white);box-shadow:0 8px 32px rgba(0,0,0,.5);transform:translateY(70px);opacity:0;transition:all .3s cubic-bezier(.16,1,.3,1);display:flex;align-items:center;gap:9px;pointer-events:none;max-width:300px}
+#toast.on{transform:translateY(0);opacity:1}
+
+/* responsive */
+@media(max-width:680px){.abrand{display:none}.aform{padding:30px 22px}.sb{display:none}.main{padding:18px 14px}.stats{grid-template-columns:1fr 1fr}.ag{grid-template-columns:1fr}.afc{grid-column:auto}}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
+</style>
+</head>
+<body>
+
+<!-- ══ AUTH ═══════════════════════════════════════ -->
+<div id="auth">
+  <canvas id="pcanvas"></canvas>
+  <div class="acard">
+
+    <!-- Brand -->
+    <div class="abrand">
+      <div class="a-logo">
+        <div class="a-icon">📁</div>
+        <div>
+          <div class="a-name">NEXUS</div>
+          <div class="a-ver">FILE SHARE v2.0</div>
+        </div>
+      </div>
+      <div class="a-headline">Mỗi user<br>một key <em>riêng.</em><br>Không chia sẻ.</div>
+      <div class="a-feats">
+        <div class="a-feat"><div class="fdot"></div>Nhập key → vào ngay</div>
+        <div class="a-feat"><div class="fdot"></div>Admin key: toàn quyền</div>
+        <div class="a-feat"><div class="fdot"></div>User key: chỉ xem & tải</div>
+        <div class="a-feat"><div class="fdot"></div>Device lock tự động</div>
+        <div class="a-feat"><div class="fdot"></div>Khoá sau 3 lần sai</div>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <div class="aform">
+
+      <!-- KEY panel -->
+      <div id="key-panel">
+        <div class="af-title">Nhập key của bạn</div>
+        <div class="af-sub">Mỗi người dùng có một key riêng. Key xác định quyền truy cập của bạn tự động.</div>
+
+        <div class="a-hint">
+          Định dạng: <span>NXV5-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX-XX</span><br>
+          Liên hệ Admin để nhận key nếu bạn chưa có.
+        </div>
+
+        <div class="key-field">
+          <span class="ki">🔑</span>
+          <input id="kinput" type="text" placeholder="NXV5-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX-XX"
+            maxlength="48" autocomplete="off" spellcheck="false"
+            oninput="this.value=this.value.toUpperCase();clearKErr()"
+            onkeydown="if(event.key==='Enter')doKeyLogin()">
+          <button class="kpaste" title="Paste" onclick="doPaste()">📋</button>
+        </div>
+
+        <div class="adots">
+          <div class="adot" id="d0"></div>
+          <div class="adot" id="d1"></div>
+          <div class="adot" id="d2"></div>
+        </div>
+        <div id="amsg"></div>
+
+        <div class="lockbox" id="lockbox">
+          <div class="li">🔒</div>
+          <p>Quá nhiều lần sai. Chờ:</p>
+          <div class="lockcd" id="lockcd">30s</div>
+        </div>
+
+        <button id="asubmit" onclick="doKeyLogin()">Xác thực →</button>
+
+        <div class="a-sep">
+          <div class="a-sep-line"></div>
+          <div class="a-sep-txt">Bạn là Admin?</div>
+          <div class="a-sep-line"></div>
+        </div>
+        <div class="admin-link"><a onclick="showAdminPanel()">Đăng nhập bằng mật khẩu Admin →</a></div>
+      </div>
+
+      <!-- ADMIN PASS panel -->
+      <div id="admin-pass-panel">
+        <div class="af-title">Đăng nhập Admin</div>
+        <div class="af-sub">Dùng tài khoản hoặc Admin Key để quản trị hệ thống.</div>
+
+        <!-- Tab toggle -->
+        <div class="ap-tabs">
+          <button class="ap-tab on" id="aptab-pass" onclick="switchAdminTab('pass')">🔐 Mật khẩu</button>
+          <button class="ap-tab" id="aptab-key" onclick="switchAdminTab('key')">🗝 Admin Key</button>
+        </div>
+
+        <!-- Sub-panel: Password -->
+        <div id="admin-sub-pass">
+          <input class="ap-inp" id="au" type="text" placeholder="Tên đăng nhập" autocomplete="off" onkeydown="if(event.key==='Enter')doPassLogin()">
+          <input class="ap-inp" id="ap" type="password" placeholder="Mật khẩu" onkeydown="if(event.key==='Enter')doPassLogin()">
+          <div class="adots">
+            <div class="adot" id="pd0"></div>
+            <div class="adot" id="pd1"></div>
+            <div class="adot" id="pd2"></div>
+          </div>
+          <div id="pass-msg"></div>
+          <div class="lockbox" id="pass-lockbox">
+            <div class="li">🔒</div>
+            <p>Quá nhiều lần sai.</p>
+            <div class="lockcd" id="pass-lockcd">30s</div>
+          </div>
+          <button id="apassubmit" onclick="doPassLogin()">Đăng nhập Admin</button>
+        </div>
+
+        <!-- Sub-panel: Admin Key -->
+        <div id="admin-sub-key" style="display:none">
+          <div class="key-field" style="margin-bottom:14px">
+            <span class="ki">🗝</span>
+            <input id="admin-kinput" type="text" autocomplete="off" spellcheck="false"
+              placeholder="NXV5-AXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX-XX"
+              style="width:100%;background:var(--bg);border:1.5px solid var(--bd2);border-radius:9px;
+                     padding:13px 42px 13px 40px;color:var(--purpleL);font-family:var(--mono);
+                     font-size:12.5px;outline:none;letter-spacing:.04em;
+                     transition:border-color .18s,box-shadow .18s;caret-color:var(--purpleL)"
+              oninput="this.value=this.value.toUpperCase()"
+              onkeydown="if(event.key==='Enter')doAdminKeyLogin()">
+            <button class="kpaste" title="Paste" onclick="doPasteAdminKey()">📋</button>
+          </div>
+          <div class="a-hint" style="margin-bottom:14px">
+            Admin Key phải có định dạng <span>NXV5-A…</span> (ký tự thứ 6 là <span>A</span>)
+          </div>
+          <div class="adots">
+            <div class="adot" id="akd0"></div>
+            <div class="adot" id="akd1"></div>
+            <div class="adot" id="akd2"></div>
+          </div>
+          <div id="adminkey-msg" style="font-size:12px;text-align:center;min-height:16px;font-family:var(--mono);margin-bottom:12px"></div>
+          <div class="lockbox" id="adminkey-lockbox">
+            <div class="li">🔒</div>
+            <p>Quá nhiều lần sai.</p>
+            <div class="lockcd" id="adminkey-lockcd">30s</div>
+          </div>
+          <button id="adminkey-submit" onclick="doAdminKeyLogin()"
+            style="width:100%;padding:12px;border-radius:8px;background:var(--s2);
+                   border:1.5px solid var(--bd2);color:var(--white);font-family:var(--sans);
+                   font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;margin-bottom:12px;display:block"
+            onmouseover="this.style.borderColor='var(--purple)';this.style.background='rgba(124,58,237,.14)'"
+            onmouseout="this.style.borderColor='var(--bd2)';this.style.background='var(--s2)'">
+            Xác thực Admin Key
+          </button>
+        </div>
+
+        <div class="back-link" onclick="showKeyPanel()">← Quay lại nhập key</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP ════════════════════════════════════════ -->
+<div id="app">
+  <header class="hdr">
+    <div class="hlogo"><div class="hpulse"></div>NEXUS FILE SHARE</div>
+    <div class="hsep"></div>
+    <span class="rbadge" id="rbadge"></span>
+    <span class="huser" id="huser"></span>
+    <div class="hright">
+      <span class="hclock" id="hclock"></span>
+      <button class="logout-btn" onclick="doLogout()">Đăng xuất</button>
+    </div>
+  </header>
+
+  <div class="abody">
+    <nav class="sb">
+      <div class="sb-sec">
+        <div class="sb-lbl">DUYỆT</div>
+        <div class="sb-item on" onclick="goPage('files')" id="sbi-files"><span class="si">📂</span>Tất cả file<span class="sbc" id="c-all">0</span></div>
+        <div class="sb-item" onclick="goPage('apk')" id="sbi-apk"><span class="si">📱</span>APK<span class="sbc" id="c-apk">0</span></div>
+        <div class="sb-item" onclick="goPage('tools')" id="sbi-tools"><span class="si">🔧</span>Tools / Source<span class="sbc" id="c-tools">0</span></div>
+      </div>
+      <div class="sb-sec" id="admin-sb" style="display:none">
+        <div class="sb-lbl">QUẢN TRỊ</div>
+        <div class="sb-item" onclick="goPage('upload')" id="sbi-upload"><span class="si">⬆️</span>Upload file</div>
+        <div class="sb-item" onclick="goPage('keys')" id="sbi-keys"><span class="si">🔑</span>Key Manager<span class="sbc" id="c-keys">0</span></div>
+      </div>
+    </nav>
+
+    <main class="main">
+
+      <!-- Files -->
+      <div class="pg on" id="pg-files">
+        <div class="pgh">
+          <div><div class="pgt">File Library</div><div class="pgs">Thư viện chia sẻ công khai</div></div>
+        </div>
+        <div class="stats">
+          <div class="stat"><div class="sv" id="sv-total">0</div><div class="sl">Tổng file</div></div>
+          <div class="stat"><div class="sv" id="sv-apk">0</div><div class="sl">APK</div></div>
+          <div class="stat"><div class="sv" id="sv-dl">0</div><div class="sl">Lượt tải</div></div>
+          <div class="stat"><div class="sv" id="sv-keys">—</div><div class="sl">Keys active</div></div>
+        </div>
+        <div class="ftw">
+          <div class="toolbar">
+            <input class="sinp" type="text" placeholder="🔍  Tìm file..." id="sinp" oninput="renderFiles()">
+            <div class="chips">
+              <button class="chip on" onclick="setChip('all',this)">Tất cả</button>
+              <button class="chip" onclick="setChip('apk',this)">APK</button>
+              <button class="chip" onclick="setChip('zip',this)">ZIP</button>
+              <button class="chip" onclick="setChip('so',this)">SO</button>
+              <button class="chip" onclick="setChip('java',this)">Java</button>
+            </div>
+          </div>
+          <div id="flist"></div>
+        </div>
+      </div>
+
+      <!-- APK -->
+      <div class="pg" id="pg-apk">
+        <div class="pgh"><div><div class="pgt">APK</div><div class="pgs">Ứng dụng Android</div></div></div>
+        <div class="ftw"><div id="apklist"></div></div>
+      </div>
+
+      <!-- Tools -->
+      <div class="pg" id="pg-tools">
+        <div class="pgh"><div><div class="pgt">Tools / Source</div><div class="pgs">File code & công cụ</div></div></div>
+        <div class="ftw"><div id="toolslist"></div></div>
+      </div>
+
+      <!-- Upload (admin) -->
+      <div class="pg" id="pg-upload">
+        <div class="pgh"><div><div class="pgt">Upload File</div><div class="pgs">Chỉ Admin</div></div></div>
+        <div class="dropzone" id="dropzone"
+          onclick="document.getElementById('fpick').click()"
+          ondragover="dzOver(event)" ondragleave="dzLeave()" ondrop="dzDrop(event)">
+          <div class="dz-icon">📂</div>
+          <div class="dz-title">Kéo thả hoặc nhấp để chọn file</div>
+          <div class="dz-sub">APK, ZIP, SO, Java, JSON — tối đa 500 MB</div>
+          <input type="file" id="fpick" style="display:none" multiple onchange="pickFiles(this)">
+        </div>
+        <div class="prog-list" id="prog-list"></div>
+        <div class="addbox">
+          <div class="add-title">➕ Thêm link file thủ công</div>
+          <div class="ag">
+            <input class="ai afc" id="af-name" placeholder="Tên file  (vd: MyApp_v2.apk)">
+            <input class="ai afc" id="af-url"  placeholder="Download URL  (GitHub Raw / CDN...)">
+            <select class="asel" id="af-type">
+              <option value="apk">APK</option><option value="zip">ZIP</option>
+              <option value="so">SO</option><option value="java">Java / Source</option>
+              <option value="json">JSON</option><option value="other">Khác</option>
+            </select>
+            <select class="asel" id="af-tag">
+              <option value="new">NEW</option><option value="stable">STABLE</option><option value="beta">BETA</option>
+            </select>
+            <input class="ai" id="af-size" placeholder="Kích thước  (vd: 53 MB)">
+            <input class="ai" id="af-note" placeholder="Ghi chú / mô tả">
+          </div>
+          <div style="margin-top:11px"><button class="btn-p" onclick="addFile()">+ Thêm vào thư viện</button></div>
+        </div>
+      </div>
+
+      <!-- Keys (admin) -->
+      <div class="pg" id="pg-keys">
+        <div class="pgh">
+          <div><div class="pgt">Key Manager</div><div class="pgs">Tạo & quản lý key từng người dùng</div></div>
+          <button class="btn-p" onclick="genKey()">+ Tạo key mới</button>
+        </div>
+        <div class="ktw">
+          <table>
+            <thead><tr>
+              <th>KEY</th><th>ROLE</th><th>NGƯỜI DÙNG</th>
+              <th>TRẠNG THÁI</th><th>HẾT HẠN</th><th>THIẾT BỊ</th><th></th>
+            </tr></thead>
+            <tbody id="ktbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="mbg" id="mmodal">
+  <div class="modal">
+    <h3 id="mtitle">Xác nhận</h3>
+    <p id="mbody"></p>
+    <div class="mact">
+      <button class="btn-g" onclick="closeModal()">Huỷ</button>
+      <button class="btn-danger" id="mconfirm">Xoá</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// STORAGE
+// ══════════════════════════════════════════════════════
+const SK = { files:'nx2_files', session:'nx2_session', device:'nx2_device',
+             lockKey:'nx2_lk', attKey:'nx2_ak', lockPas:'nx2_lp', attPas:'nx2_ap' };
+const MAX_ATT = 3, LOCK_MS = 30000;
+const ADMIN_CREDS = { u:'admin', p:'nexus@2026' };
+const KEY_SALT = 'NX2_SECRET_2026';
+const KEY_ABC  = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ'; // Base34
+
+// ══ FIREBASE CONFIG ══════════════════════════════════
+const FB_URL = 'https://nexus-keys-80be0-default-rtdb.firebaseio.com';
+
+async function fbGet(path){
+  try{
+    const r = await fetch(`${FB_URL}/${path}.json`);
+    if(!r.ok) return null;
+    return await r.json();
+  } catch{ return null; }
+}
+async function fbSet(path, data){
+  try{
+    await fetch(`${FB_URL}/${path}.json`, {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(data)
+    });
+  } catch{}
+}
+async function fbPatch(path, data){
+  try{
+    await fetch(`${FB_URL}/${path}.json`, {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(data)
+    });
+  } catch{}
+}
+
+// Cache keys trong memory để không fetch liên tục
+let _keysCache = null;
+let _keysCacheTime = 0;
+const CACHE_TTL = 30000; // 30 giây
+
+async function loadKeysAsync(){
+  if(_keysCache && Date.now()-_keysCacheTime < CACHE_TTL) return _keysCache;
+  const data = await fbGet('keys');
+  if(!data){
+    // Lần đầu — khởi tạo admin key mặc định
+    const init = { 'MASTER': DEFAULT_ADMIN_KEY };
+    await fbSet('keys', init);
+    _keysCache = [DEFAULT_ADMIN_KEY];
+  } else {
+    _keysCache = Object.values(data);
+    // Đảm bảo admin key luôn tồn tại
+    if(!_keysCache.find(k=>k.key===DEFAULT_ADMIN_KEY.key)){
+      await fbSet('keys/MASTER', DEFAULT_ADMIN_KEY);
+      _keysCache.unshift(DEFAULT_ADMIN_KEY);
+    }
+  }
+  _keysCacheTime = Date.now();
+  return _keysCache;
+}
+
+function loadKeys(){
+  // Sync fallback — trả về cache hoặc chỉ admin key
+  return _keysCache || [DEFAULT_ADMIN_KEY];
+}
+
+async function saveKeysAsync(arr){
+  _keysCache = arr;
+  _keysCacheTime = Date.now();
+  const obj = {};
+  arr.forEach((k,i)=>{
+    const id = k.key.replace(/[^a-zA-Z0-9]/g,'_');
+    obj[id] = k;
+  });
+  await fbSet('keys', obj);
+}
+
+function saveKeys(arr){
+  _keysCache = arr;
+  saveKeysAsync(arr);
+}
+
+const DEFAULT_ADMIN_KEY = {
+  key:       'NXV5-A7X9MNPQ-B3RKWZ4H-C6TJVN8Y-D2MPQR5G-Z0',
+  role:      'admin',
+  note:      'Master Admin',
+  expiresAt: null,
+  deviceId:  null,
+  banned:    false,
+  createdAt: 0
+};
+
+function ls(k,fb=null){ try{return JSON.parse(localStorage.getItem(k))??fb}catch{return fb} }
+function lss(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch{} }
+
+function getDevice(){
+  let id=localStorage.getItem(SK.device);
+  if(!id){ const a=new Uint8Array(16); crypto.getRandomValues(a); id=Array.from(a).map(b=>b.toString(16).padStart(2,'0')).join(''); localStorage.setItem(SK.device,id); }
+  return id;
+}
+
+function loadFiles(){ return ls(SK.files, defaultFiles()); }
+function saveFiles(f){ lss(SK.files,f); }
+
+function defaultFiles(){
+  return [
+    {id:1,name:'NEXUS_VIP_V5.apk',type:'apk',tag:'new',size:'53 MB',url:'#',note:'Phiên bản chính thức',downloads:0,date:'2026-10-10'},
+    {id:2,name:'aimdrag_native.zip',type:'zip',tag:'stable',size:'14 KB',url:'#',note:'Native aim drag source',downloads:0,date:'2026-10-10'},
+    {id:3,name:'libaimdrag.so',type:'so',tag:'beta',size:'48 KB',url:'#',note:'arm64-v8a native lib',downloads:0,date:'2026-10-10'},
+    {id:4,name:'KeyValidator.java',type:'java',tag:'stable',size:'5 KB',url:'#',note:'Android key system client',downloads:0,date:'2026-10-10'},
+  ];
+}
+
+// ══════════════════════════════════════════════════════
+// KEY SYSTEM
+// Format: NXV5-G1(8)-G2(8)-G3(8)-G4(8)-CHK(2)
+// Admin key: G1 bắt đầu bằng 'A'
+// ══════════════════════════════════════════════════════
+function calcChk(g1,g2,g3,g4){
+  const s=g1+g2+g3+g4+KEY_SALT; let h=0x3F7A;
+  for(let i=0;i<s.length;i++) h=((h<<5)^(h>>3)^s.charCodeAt(i))&0xFFFF;
+  return KEY_ABC[h&33]+KEY_ABC[(h>>8)&33];
+}
+function validFmt(key){
+  const m=key.match(/^NXV5-([0-9A-HJKLMNPQRSTUVWXYZ]{8})-([0-9A-HJKLMNPQRSTUVWXYZ]{8})-([0-9A-HJKLMNPQRSTUVWXYZ]{8})-([0-9A-HJKLMNPQRSTUVWXYZ]{8})-([0-9A-HJKLMNPQRSTUVWXYZ]{2})$/);
+  if(!m) return false;
+  return calcChk(m[1],m[2],m[3],m[4])===m[5];
+}
+function genKey(roleArg){
+  // called from button OR from internal role arg
+  let role=roleArg;
+  if(role===undefined){ role=confirm('Tạo key ADMIN?\n(Huỷ = User key)')?'admin':'user'; }
+  const note=prompt('Tên người dùng (ghi chú):') || '';
+  const days=parseInt(prompt('Số ngày (0 = Lifetime):') || '30');
+
+  const b=new Uint8Array(40); crypto.getRandomValues(b);
+  const toB34=(arr,len)=>{ let o=''; for(let i=0;i<len;i++) o+=KEY_ABC[arr[i]%KEY_ABC.length]; return o; };
+  let g1=toB34(b.slice(0,8),8);
+  // embed role in first char
+  if(role==='admin') g1='A'+g1.slice(1);
+  else if(g1[0]==='A') g1='B'+g1.slice(1); // ensure user key never starts with A
+  const g2=toB34(b.slice(8,16),8), g3=toB34(b.slice(16,24),8), g4=toB34(b.slice(24,32),8);
+  const chk=calcChk(g1,g2,g3,g4);
+  const key=`NXV5-${g1}-${g2}-${g3}-${g4}-${chk}`;
+
+  const keys=loadKeys();
+  keys.unshift({key,role,note,expiresAt:days>0?Date.now()+days*86400000:null,deviceId:null,banned:false,createdAt:Date.now()});
+  saveKeys(keys);
+  renderAll();
+  navigator.clipboard?.writeText(key).catch(()=>{});
+  showToast(`✅ Key tạo & sao chép cho "${note||'user'}"`, 'ok');
+}
+function keyRole(key){
+  const m=key.match(/^NXV5-([A-HJKLMNPQRSTUVWXYZ0-9])/);
+  // Also check stored role (admin may have manually set it)
+  const stored=loadKeys().find(k=>k.key===key);
+  if(stored) return stored.role||((m&&m[1]==='A')?'admin':'user');
+  return (m&&m[1]==='A')?'admin':'user';
+}
+
+// ══════════════════════════════════════════════════════
+// SESSION
+// ══════════════════════════════════════════════════════
+let SESSION=null;
+function getSession(){
+  const s=ls(SK.session,null);
+  if(!s||s.deviceId!==getDevice()) return null;
+  if(s.key){
+    const k=loadKeys().find(x=>x.key===s.key);
+    if(!k||k.banned||(k.expiresAt&&Date.now()>k.expiresAt)) return null;
+  }
+  return s;
+}
+function saveSession(s){ lss(SK.session,{...s,deviceId:getDevice()}); }
+function clearSession(){ localStorage.removeItem(SK.session); }
+
+// ══════════════════════════════════════════════════════
+// PARTICLES
+// ══════════════════════════════════════════════════════
+(function(){
+  const c=document.getElementById('pcanvas'), ctx=c.getContext('2d');
+  function resize(){ c.width=innerWidth; c.height=innerHeight; }
+  resize(); addEventListener('resize',resize);
+  const pts=Array.from({length:55},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:Math.random()*1.4+.4,vx:(Math.random()-.5)*.38,vy:(Math.random()-.5)*.38,a:Math.random()*.5+.1}));
+  (function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    pts.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0)p.x=c.width; if(p.x>c.width)p.x=0;
+      if(p.y<0)p.y=c.height; if(p.y>c.height)p.y=0;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(124,58,237,${p.a})`; ctx.fill();
+    });
+    for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++){
+      const d=Math.hypot(pts[i].x-pts[j].x,pts[i].y-pts[j].y);
+      if(d<95){ ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y);
+        ctx.strokeStyle=`rgba(124,58,237,${.1*(1-d/95)})`; ctx.lineWidth=.5; ctx.stroke(); }
+    }
+    requestAnimationFrame(draw);
+  })();
+})();
+
+// ══════════════════════════════════════════════════════
+// AUTH UI helpers
+// ══════════════════════════════════════════════════════
+const SK_ATT_ADKEY = 'nx2_ak2'; // riêng cho admin-key tab
+const SK_LOCK_ADKEY = 'nx2_lk2';
+let kAtts=parseInt(ls(SK.attKey,0)||0);
+let pAtts=parseInt(ls(SK.attPas,0)||0);
+let akAtts=parseInt(ls(SK_ATT_ADKEY,0)||0);
+
+function showKeyPanel(){ document.getElementById('key-panel').style.display=''; document.getElementById('admin-pass-panel').style.display='none'; }
+function showAdminPanel(){ document.getElementById('key-panel').style.display='none'; document.getElementById('admin-pass-panel').style.display=''; }
+
+function switchAdminTab(tab){
+  const isPass = tab === 'pass';
+  document.getElementById('admin-sub-pass').style.display = isPass ? '' : 'none';
+  document.getElementById('admin-sub-key').style.display  = isPass ? 'none' : '';
+  document.getElementById('aptab-pass').classList.toggle('on', isPass);
+  document.getElementById('aptab-key').classList.toggle('on', !isPass);
+  // clear messages khi chuyển tab
+  msg('pass-msg',''); msg('adminkey-msg','');
+}
+
+async function doPasteAdminKey(){
+  try{
+    const txt = (await navigator.clipboard.readText()).trim().toUpperCase();
+    document.getElementById('admin-kinput').value = txt;
+  } catch{ showToast('Không đọc được clipboard, tự paste nhé.'); }
+}
+
+function dots(pre,n){ for(let i=0;i<3;i++){ const d=document.getElementById(pre+i); if(d) d.classList.toggle('used',i<n); } }
+
+function msg(id,txt,cls='err'){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.textContent=txt; el.className=cls;
+}
+
+function clearKErr(){
+  document.getElementById('kinput').classList.remove('err');
+  document.getElementById('amsg').textContent='';
+  document.getElementById('amsg').className='';
+}
+
+async function doPaste(){
+  try{ document.getElementById('kinput').value=(await navigator.clipboard.readText()).trim().toUpperCase(); }
+  catch{ showToast('Không đọc được clipboard, tự paste nhé.'); }
+}
+
+function startLock(lockSK,attSK,cdId,boxId,btnId,secs,dotPre){
+  const cd=document.getElementById(cdId), box=document.getElementById(boxId), btn=document.getElementById(btnId);
+  if(box) box.style.display='block';
+  if(btn) btn.disabled=true;
+  let left=secs; if(cd) cd.textContent=left+'s';
+  const t=setInterval(()=>{
+    left--;
+    if(cd) cd.textContent=left+'s';
+    if(left<=0){
+      clearInterval(t);
+      if(box) box.style.display='none';
+      if(btn) btn.disabled=false;
+      localStorage.removeItem(lockSK); localStorage.removeItem(attSK);
+      if(dotPre==='d'){ kAtts=0; dots('d',0); } else { pAtts=0; dots('pd',0); }
+    }
+  },1000);
+}
+
+function checkExistingLocks(){
+  const kl=parseInt(ls(SK.lockKey,0)||0), pl=parseInt(ls(SK.lockPas,0)||0), al=parseInt(ls(SK_LOCK_ADKEY,0)||0);
+  if(Date.now()<kl) startLock(SK.lockKey,SK.attKey,'lockcd','lockbox','asubmit',Math.ceil((kl-Date.now())/1000),'d');
+  if(Date.now()<pl) startLock(SK.lockPas,SK.attPas,'pass-lockcd','pass-lockbox','apassubmit',Math.ceil((pl-Date.now())/1000),'pd');
+  if(Date.now()<al) startLock(SK_LOCK_ADKEY,SK_ATT_ADKEY,'adminkey-lockcd','adminkey-lockbox','adminkey-submit',Math.ceil((al-Date.now())/1000),'akd');
+  kAtts=parseInt(ls(SK.attKey,0)||0); pAtts=parseInt(ls(SK.attPas,0)||0); akAtts=parseInt(ls(SK_ATT_ADKEY,0)||0);
+  dots('d',kAtts); dots('pd',pAtts); dots('akd',akAtts);
+}
+
+// ══════════════════════════════════════════════════════
+// LOGIN — KEY
+// ══════════════════════════════════════════════════════
+async function doKeyLogin(){
+  if((ls(SK.lockKey,0)||0) > Date.now()) return;
+  const key=document.getElementById('kinput').value.trim().toUpperCase();
+  if(!key){ msg('amsg','⚠ Vui lòng nhập key'); return; }
+
+  const btn=document.getElementById('asubmit');
+  btn.disabled=true; msg('amsg','⏳ Đang xác thực...','');
+
+  const keys = await loadKeysAsync();
+  if(!keys.length){ msg('amsg','⚠ Chưa có key. Admin chưa tạo key nào.'); btn.disabled=false; return; }
+
+  const found=keys.find(k=>k.key.toUpperCase()===key);
+
+  if(!found){
+    btn.disabled=false;
+    document.getElementById('kinput').classList.add('err');
+    kAtts++; lss(SK.attKey,kAtts); dots('d',kAtts);
+    if(kAtts>=MAX_ATT){
+      const until=Date.now()+LOCK_MS; lss(SK.lockKey,until);
+      startLock(SK.lockKey,SK.attKey,'lockcd','lockbox','asubmit',Math.ceil(LOCK_MS/1000),'d');
+      msg('amsg','🔒 Tạm khoá do quá nhiều lần sai');
+    } else {
+      const left=MAX_ATT-kAtts;
+      msg('amsg',validFmt(key)?`⚠ Key không tồn tại (${left} lần còn lại)`:`✗ Sai định dạng key (${left} lần còn lại)`);
+    }
+    return;
+  }
+
+  if(found.banned){ msg('amsg','🚫 Key này đã bị khoá vĩnh viễn'); btn.disabled=false; return; }
+  if(found.expiresAt && Date.now()>found.expiresAt){ msg('amsg','⏰ Key đã hết hạn — liên hệ Admin'); btn.disabled=false; return; }
+
+  // Device lock
+  const dev=getDevice();
+  if(found.deviceId && found.deviceId!==dev){ msg('amsg','🖥 Key đã gắn với thiết bị khác'); btn.disabled=false; return; }
+  if(!found.deviceId){
+    const all=await loadKeysAsync();
+    const k=all.find(x=>x.key===found.key);
+    if(k){ k.deviceId=dev; saveKeys(all); }
+  }
+
+  msg('amsg','✅ Xác thực thành công!','ok');
+  localStorage.removeItem(SK.attKey); localStorage.removeItem(SK.lockKey);
+  setTimeout(()=> enterApp({ role:keyRole(found.key), key:found.key, username:found.note||'User' }), 550);
+}
+
+// ══════════════════════════════════════════════════════
+// LOGIN — ADMIN PASS
+// ══════════════════════════════════════════════════════
+function doPassLogin(){
+  if((ls(SK.lockPas,0)||0) > Date.now()) return;
+  const u=document.getElementById('au').value.trim();
+  const p=document.getElementById('ap').value;
+  if(u===ADMIN_CREDS.u && p===ADMIN_CREDS.p){
+    msg('pass-msg','✅ Đăng nhập thành công!','ok');
+    localStorage.removeItem(SK.attPas); localStorage.removeItem(SK.lockPas);
+    setTimeout(()=> enterApp({ role:'admin', key:null, username:'Admin' }), 500);
+  } else {
+    document.getElementById('ap').classList.add('err');
+    setTimeout(()=>document.getElementById('ap').classList.remove('err'),400);
+    pAtts++; lss(SK.attPas,pAtts); dots('pd',pAtts);
+    if(pAtts>=MAX_ATT){
+      const until=Date.now()+LOCK_MS; lss(SK.lockPas,until);
+      startLock(SK.lockPas,SK.attPas,'pass-lockcd','pass-lockbox','apassubmit',Math.ceil(LOCK_MS/1000),'pd');
+      msg('pass-msg','🔒 Tạm khoá','err');
+    } else {
+      msg('pass-msg',`✗ Sai thông tin (${MAX_ATT-pAtts} lần còn lại)`,'err');
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// LOGIN — ADMIN KEY (tab trong admin panel)
+// ══════════════════════════════════════════════════════
+async function doAdminKeyLogin(){
+  if((ls(SK_LOCK_ADKEY,0)||0) > Date.now()) return;
+
+  const inp = document.getElementById('admin-kinput');
+  const key = inp.value.trim().toUpperCase();
+
+  if(!key){ msg('adminkey-msg','⚠ Vui lòng nhập Admin Key','err'); return; }
+
+  if(!validFmt(key)){ badAdminKey('✗ Sai định dạng key'); inp.style.borderColor='var(--red)'; setTimeout(()=>inp.style.borderColor='',400); return; }
+
+  const m = key.match(/^NXV5-([0-9A-HJKLMNPQRSTUVWXYZ]{8})/);
+  if(!m || m[1][0] !== 'A'){ badAdminKey('🚫 Key này không phải Admin Key'); inp.style.borderColor='var(--red)'; setTimeout(()=>inp.style.borderColor='',400); return; }
+
+  msg('adminkey-msg','⏳ Đang xác thực...','');
+  const keys = await loadKeysAsync();
+  const found = keys.find(k=>k.key.toUpperCase()===key);
+
+  if(!found){ badAdminKey(validFmt(key)?'⚠ Admin Key không tồn tại trong hệ thống':'✗ Key không hợp lệ'); return; }
+  if(found.banned){ msg('adminkey-msg','🚫 Key này đã bị khoá vĩnh viễn','err'); return; }
+  if(found.expiresAt && Date.now()>found.expiresAt){ msg('adminkey-msg','⏰ Key đã hết hạn — liên hệ Admin','err'); return; }
+
+  const role = found.role || keyRole(found.key);
+  if(role !== 'admin'){ badAdminKey('🚫 Key này không có quyền Admin'); return; }
+
+  const dev = getDevice();
+  if(found.deviceId && found.deviceId !== dev){ msg('adminkey-msg','🖥 Key đã gắn với thiết bị khác','err'); return; }
+  if(!found.deviceId){
+    const all = await loadKeysAsync(); const k = all.find(x=>x.key===found.key);
+    if(k){ k.deviceId=dev; saveKeys(all); }
+  }
+
+  msg('adminkey-msg','✅ Xác thực Admin thành công!','ok');
+  localStorage.removeItem(SK_ATT_ADKEY); localStorage.removeItem(SK_LOCK_ADKEY);
+  akAtts=0; dots('akd',0);
+  setTimeout(()=> enterApp({ role:'admin', key:found.key, username:found.note||'Admin' }), 500);
+}
+
+function badAdminKey(txt){
+  akAtts++; lss(SK_ATT_ADKEY, akAtts); dots('akd', akAtts);
+  if(akAtts >= MAX_ATT){
+    const until = Date.now()+LOCK_MS; lss(SK_LOCK_ADKEY, until);
+    startLock(SK_LOCK_ADKEY, SK_ATT_ADKEY,'adminkey-lockcd','adminkey-lockbox','adminkey-submit',Math.ceil(LOCK_MS/1000),'akd');
+    msg('adminkey-msg','🔒 Tạm khoá do quá nhiều lần sai','err');
+  } else {
+    msg('adminkey-msg',`${txt} (${MAX_ATT-akAtts} lần còn lại)`,'err');
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// ENTER APP
+// ══════════════════════════════════════════════════════
+function enterApp(s){
+  SESSION=s; saveSession(s);
+  document.getElementById('auth').classList.add('auth-exit');
+  setTimeout(()=>{
+    document.getElementById('auth').style.display='none';
+    document.getElementById('app').classList.add('on');
+    initApp();
+  },420);
+}
+
+function initApp(){
+  const adm=SESSION.role==='admin';
+  document.getElementById('rbadge').textContent = adm ? '🛡 ADMIN' : '👤 USER';
+  document.getElementById('rbadge').className   = 'rbadge '+(adm?'rb-admin':'rb-user');
+  document.getElementById('huser').textContent  = SESSION.username||'';
+  document.getElementById('admin-sb').style.display = adm?'':'none';
+  renderAll();
+}
+
+function doLogout(){
+  clearSession(); SESSION=null;
+  document.getElementById('app').classList.remove('on');
+  const auth=document.getElementById('auth');
+  auth.style.display='flex'; auth.classList.remove('auth-exit');
+  document.getElementById('kinput').value='';
+  document.getElementById('amsg').textContent='';
+  document.getElementById('au').value=''; document.getElementById('ap').value='';
+  document.getElementById('admin-kinput').value='';
+  document.getElementById('pass-msg').textContent='';
+  document.getElementById('adminkey-msg').textContent='';
+  switchAdminTab('pass');
+  showKeyPanel();
+}
+
+// ══════════════════════════════════════════════════════
+// RENDER FILES
+// ══════════════════════════════════════════════════════
+const TI={apk:{i:'📱',c:'fi-apk'},zip:{i:'📦',c:'fi-zip'},so:{i:'⚙️',c:'fi-so'},java:{i:'☕',c:'fi-java'},json:{i:'📄',c:'fi-json'},other:{i:'📎',c:'fi-other'}};
+const TC={new:'t-new',stable:'t-stable',beta:'t-beta'};
+let curChip='all', curSearch='';
+
+function frow(f){
+  const t=TI[f.type]||TI.other;
+  const adm=SESSION&&SESSION.role==='admin';
+  return `<div class="frow">
+    <div class="ficon ${t.c}">${t.i}</div>
+    <div class="finfo">
+      <div class="fnm" title="${f.name}">${f.name}</div>
+      <div class="fmeta">${f.size} · ${f.date}${f.note?' · '+f.note:''}</div>
+    </div>
+    <span class="ftag ${TC[f.tag]||'t-stable'}">${f.tag.toUpperCase()}</span>
+    <div class="fdl">⬇ ${f.downloads}</div>
+    <div class="ract">
+      <a class="rbtn btn-dl" href="${f.url}" download onclick="cntDl(${f.id}); return ${f.url!=='#'}">⬇ Tải</a>
+      ${adm?`<button class="rbtn btn-del" onclick="confirmDel(${f.id})">🗑</button>`:''}
+    </div>
+  </div>`;
+}
+function fempty(m){ return `<div class="empty">${m}</div>`; }
+
+function setChip(v,el){ curChip=v; document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on')); el.classList.add('on'); renderFiles(); }
+
+function renderFiles(){
+  curSearch=(document.getElementById('sinp')?.value||'').toLowerCase();
+  const files=loadFiles();
+  const filt=files.filter(f=>(curChip==='all'||f.type===curChip)&&(!curSearch||f.name.toLowerCase().includes(curSearch)));
+  const el=document.getElementById('flist'); if(el) el.innerHTML=filt.length?filt.map(frow).join(''):fempty('Không có file phù hợp');
+  const ae=document.getElementById('apklist'); if(ae) ae.innerHTML=files.filter(f=>f.type==='apk').map(frow).join('')||fempty('Chưa có APK');
+  const te=document.getElementById('toolslist'); if(te) te.innerHTML=files.filter(f=>f.type!=='apk').map(frow).join('')||fempty('Chưa có tool');
+  // stats
+  const keys=loadKeys(), active=keys.filter(k=>!k.banned&&(!k.expiresAt||Date.now()<k.expiresAt));
+  document.getElementById('sv-total').textContent=files.length;
+  document.getElementById('sv-apk').textContent=files.filter(f=>f.type==='apk').length;
+  document.getElementById('sv-dl').textContent=files.reduce((a,f)=>a+f.downloads,0);
+  document.getElementById('sv-keys').textContent=SESSION?.role==='admin'?active.length:'—';
+  document.getElementById('c-all').textContent=files.length;
+  document.getElementById('c-apk').textContent=files.filter(f=>f.type==='apk').length;
+  document.getElementById('c-tools').textContent=files.filter(f=>f.type!=='apk').length;
+  document.getElementById('c-keys').textContent=keys.length;
+}
+
+function renderKeys(){
+  const tb=document.getElementById('ktbody'); if(!tb) return;
+  const keys=loadKeys();
+  if(!keys.length){ tb.innerHTML=`<tr><td colspan="7" class="empty">Chưa có key nào — nhấn "+ Tạo key mới"</td></tr>`; return; }
+  tb.innerHTML=keys.map(k=>{
+    const exp=k.expiresAt?new Date(k.expiresAt).toLocaleDateString('vi'):'∞';
+    const exp2=k.expiresAt&&Date.now()>k.expiresAt;
+    const sc=k.banned?'p-banned':exp2?'p-expired':'p-active';
+    const st=k.banned?'Khoá':exp2?'Hết hạn':'Active';
+    const kr=k.role||(k.key[5]==='A'?'admin':'user');
+    return `<tr>
+      <td><span class="kmono">${k.key}</span></td>
+      <td><span class="pill ${kr==='admin'?'p-admin':'p-user'}">${kr.toUpperCase()}</span></td>
+      <td style="font-size:12px;color:var(--text)">${k.note||'—'}</td>
+      <td><span class="pill ${sc}">${st}</span></td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--muted)">${exp}</td>
+      <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${k.deviceId?k.deviceId.slice(0,10)+'…':'—'}</td>
+      <td><button class="kdel" onclick="confirmDelKey('${k.key}')">🗑</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderAll(){ renderFiles(); if(SESSION?.role==='admin') renderKeys(); }
+
+function cntDl(id){ const f=loadFiles().find(x=>x.id===id); if(f){ f.downloads++; saveFiles(loadFiles().map(x=>x.id===id?f:x)); renderFiles(); } }
+
+// ══════════════════════════════════════════════════════
+// ADMIN: ADD FILE
+// ══════════════════════════════════════════════════════
+function addFile(){
+  if(SESSION?.role!=='admin'){ showToast('🔒 Chỉ Admin mới có quyền này'); return; }
+  const name=document.getElementById('af-name').value.trim();
+  const url =document.getElementById('af-url').value.trim();
+  if(!name||!url){ showToast('⚠ Nhập tên file và URL','warn'); return; }
+  const files=loadFiles();
+  files.unshift({id:Date.now(),name,type:document.getElementById('af-type').value,tag:document.getElementById('af-tag').value,size:document.getElementById('af-size').value.trim()||'?',url,note:document.getElementById('af-note').value.trim(),downloads:0,date:new Date().toISOString().slice(0,10)});
+  saveFiles(files);
+  ['af-name','af-url','af-size','af-note'].forEach(i=>document.getElementById(i).value='');
+  renderAll(); showToast('✅ Đã thêm: '+name,'ok');
+}
+
+// ══════════════════════════════════════════════════════
+// UPLOAD SIMULATE
+// ══════════════════════════════════════════════════════
+function dzOver(e){ e.preventDefault(); document.getElementById('dropzone').classList.add('drag'); }
+function dzLeave(){ document.getElementById('dropzone').classList.remove('drag'); }
+function dzDrop(e){ e.preventDefault(); dzLeave(); if(SESSION?.role!=='admin'){ showToast('🔒 Chỉ Admin mới có thể upload'); return; } procFiles([...e.dataTransfer.files]); }
+function pickFiles(inp){ if(SESSION?.role!=='admin'){ showToast('🔒 Chỉ Admin mới có thể upload'); return; } procFiles([...inp.files]); }
+
+function procFiles(arr){
+  const list=document.getElementById('prog-list');
+  arr.forEach(file=>{
+    const id='p'+Date.now()+Math.random().toString(16).slice(2,5);
+    const d=document.createElement('div'); d.className='prog-item'; d.id=id;
+    d.innerHTML=`<div class="pi-row"><span class="pi-name">${file.name}</span><span class="pi-size">${(file.size/1048576).toFixed(2)} MB</span></div><div class="pbar"><div class="pfill" id="pf-${id}" style="width:0%"></div></div><div class="pi-status" id="ps-${id}">Đang chuẩn bị…</div>`;
+    list.prepend(d);
+    let pct=0; const spd=Math.random()*18+8;
+    const t=setInterval(()=>{
+      pct=Math.min(pct+spd*(Math.random()*.5+.5),100);
+      document.getElementById('pf-'+id).style.width=pct+'%';
+      const ps=document.getElementById('ps-'+id);
+      if(pct<100){ ps.textContent='Đang upload… '+Math.floor(pct)+'%'; }
+      else{ clearInterval(t); ps.textContent='✅ Xong — paste GitHub raw URL vào form dưới'; ps.style.color='var(--green)';
+        document.getElementById('af-name').value=file.name;
+        const ext=file.name.split('.').pop().toLowerCase();
+        document.getElementById('af-type').value=['apk','zip','so','java','json'].includes(ext)?ext:'other';
+        document.getElementById('af-size').value=(file.size/1048576).toFixed(1)+' MB';
+      }
+    },100);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// CONFIRM MODAL
+// ══════════════════════════════════════════════════════
+function confirmDel(id){
+  const f=loadFiles().find(x=>x.id===id);
+  document.getElementById('mtitle').textContent='Xoá file';
+  document.getElementById('mbody').textContent=`Xoá "${f?.name}"? Không thể hoàn tác.`;
+  document.getElementById('mconfirm').onclick=()=>{ saveFiles(loadFiles().filter(x=>x.id!==id)); renderAll(); closeModal(); showToast('🗑 Đã xoá'); };
+  document.getElementById('mmodal').classList.add('on');
+}
+function confirmDelKey(key){
+  document.getElementById('mtitle').textContent='Xoá key';
+  document.getElementById('mbody').textContent=`Xoá key "${key.slice(0,22)}…"?`;
+  document.getElementById('mconfirm').onclick=()=>{ saveKeys(loadKeys().filter(k=>k.key!==key)); renderAll(); closeModal(); showToast('🗑 Đã xoá key'); };
+  document.getElementById('mmodal').classList.add('on');
+}
+function closeModal(){ document.getElementById('mmodal').classList.remove('on'); }
+
+// ══════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════
+const PGS=['files','apk','tools','upload','keys'];
+function goPage(p){
+  if((p==='upload'||p==='keys')&&SESSION?.role!=='admin'){ showToast('🔒 Chỉ Admin mới truy cập được'); return; }
+  PGS.forEach(id=>{ document.getElementById('pg-'+id)?.classList.remove('on'); document.getElementById('sbi-'+id)?.classList.remove('on'); });
+  document.getElementById('pg-'+p)?.classList.add('on');
+  document.getElementById('sbi-'+p)?.classList.add('on');
+  if(p==='keys') renderKeys();
+  if(['files','apk','tools'].includes(p)) renderFiles();
+}
+
+// ══════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════
+let _tt;
+function showToast(msg,type=''){
+  const el=document.getElementById('toast');
+  el.innerHTML=(type==='ok'?'✅':type==='warn'?'⚠️':'ℹ️')+' '+msg;
+  el.classList.add('on'); clearTimeout(_tt); _tt=setTimeout(()=>el.classList.remove('on'),3000);
+}
+
+// ══════════════════════════════════════════════════════
+// CLOCK
+// ══════════════════════════════════════════════════════
+setInterval(()=>{ const el=document.getElementById('hclock'); if(el) el.textContent=new Date().toLocaleTimeString('vi',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); },1000);
+
+// ══════════════════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════════════════
+(async function(){
+  const s=getSession();
+  if(s){ enterApp(s); }
+  else {
+    checkExistingLocks();
+    // Preload keys từ Firebase vào cache
+    loadKeysAsync().catch(()=>{});
+  }
+})();
+</script>
+</body>
+</html>
